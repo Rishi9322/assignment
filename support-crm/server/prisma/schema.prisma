@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String   @default("Agent")
+  team         String?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  ticketsCreated  Ticket[]      @relation("TicketCreatedBy")
+  ticketsAssigned Ticket[]      @relation("TicketAssignedTo")
+  passkeys        Passkey[]
+  ticketEvents    TicketEvent[]
+}
+
+model Passkey {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credentialId String   @unique
+  publicKey    String
+  counter      Int      @default(0)
+  deviceType   String?
+  backedUp     Boolean  @default(false)
+  transports   String?
+  nickname     String?
+  createdAt    DateTime @default(now())
+}
+
+model Vendor {
+  id           Int      @id @default(autoincrement())
+  name         String
+  type         String   @default("Temporary")
+  contactEmail String?
+  contactPhone String?
+  notes        String?
+  createdAt    DateTime @default(now())
+
+  tickets Ticket[]
+}
+
+model Ticket {
+  id            Int      @id @default(autoincrement())
+  ticketId      String   @unique
+  customerName  String
+  customerEmail String
+  subject       String
+  description   String
+  status        String   @default("Open")
+  priority      String   @default("Medium")
+  team          String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  dueAt            DateTime?
+  firstRespondedAt DateTime?
+  resolvedAt       DateTime?
+  reopenCount      Int       @default(0)
+  nextAction       String?
+
+  createdByUserId  Int
+  createdByUser    User    @relation("TicketCreatedBy", fields: [createdByUserId], references: [id])
+  assignedToUserId Int?
+  assignedToUser   User?   @relation("TicketAssignedTo", fields: [assignedToUserId], references: [id])
+  vendorId         Int?
+  vendor           Vendor? @relation(fields: [vendorId], references: [id])
+
+  events TicketEvent[]
+}
+
+model TicketEvent {
+  id            Int      @id @default(autoincrement())
+  ticketId      Int
+  ticket        Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  actorUserId   Int?
+  actor         User?    @relation(fields: [actorUserId], references: [id])
+  type          String
+  fromValue     String?
+  toValue       String?
+  message       String?
+  createdAt     DateTime @default(now())
+}

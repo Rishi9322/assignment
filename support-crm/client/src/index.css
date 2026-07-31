@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Warm Editorial (light) / Control Room (dark) — semantic tokens.
+   Utilities like bg-surface / text-ink resolve through these vars, so a
+   single .dark class swap re-themes the whole app without per-component
+   dark: overrides for anything that uses the token scale. */
+@theme {
+  --color-app: #f3f0ea;
+  --color-surface: #fbf8f3;
+  --color-surface-alt: #efebe3;
+  --color-line: #e4dfd4;
+  --color-ink: #161616;
+  --color-ink-secondary: #6e6a64;
+  --color-ink-muted: #9a948a;
+  --color-accent: #0f4c81;
+  --color-accent-hover: #0c3d68;
+  --color-accent-soft: #e3ebf3;
+  --color-warning: #c86b2a;
+  --color-warning-soft: #f6e4d5;
+  --color-danger: #b42318;
+  --color-danger-soft: #fbe4e1;
+  --color-success: #2f6b3b;
+  --color-success-soft: #e1eee3;
+}
+
+.dark {
+  --color-app: #111315;
+  --color-surface: #1d2126;
+  --color-surface-alt: #252a30;
+  --color-line: #343a40;
+  --color-ink: #f3eee6;
+  --color-ink-secondary: #b7b0a5;
+  --color-ink-muted: #8a847b;
+  --color-accent: #4c8dda;
+  --color-accent-hover: #67a3e8;
+  --color-accent-soft: #1f2a36;
+  --color-warning: #c88b3a;
+  --color-warning-soft: #2e2415;
+  --color-danger: #d64c4c;
+  --color-danger-soft: #2e1a1a;
+  --color-success: #3fa36c;
+  --color-success-soft: #16281d;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+  background-color: var(--color-app);
+  color: var(--color-ink);
+  color-scheme: light;
+}
+
+.dark body {
+  color-scheme: dark;
+}
+
+@layer components {
+  .field {
+    @apply w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent;
+  }
+  .btn-primary {
+    @apply rounded-md bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-hover disabled:opacity-50;
+  }
+  .card {
+    @apply rounded-md border border-line bg-surface;
+  }
+  .label {
+    @apply block text-xs font-medium text-ink-secondary;
+  }
+}
