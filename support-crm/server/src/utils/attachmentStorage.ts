@@ -2,7 +2,11 @@ import crypto from "crypto";
 import fs from "fs";
 import path from "path";
 
-export const UPLOAD_DIR = path.resolve(__dirname, "../../uploads");
+// Overridable so production can point this at a mounted persistent volume
+// (e.g. Railway) instead of the container's ephemeral local disk.
+export const UPLOAD_DIR = process.env.UPLOAD_DIR
+  ? path.resolve(process.env.UPLOAD_DIR)
+  : path.resolve(__dirname, "../../uploads");
 export const MAX_ATTACHMENT_SIZE = 15 * 1024 * 1024; // 15MB
 
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
