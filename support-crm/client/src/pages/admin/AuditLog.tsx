@@ -19,6 +19,12 @@ const describe = (e: AuditLogEntry): string => {
       return e.to ? `assigned ${e.message}: ${e.to}` : `removed ${e.message} assignment`;
     case "note":
       return "added a note";
+    case "blocked":
+      return `marked as ${e.to}`;
+    case "next_action_set":
+      return e.to ? "set the next action" : "cleared the next action";
+    case "attachment_added":
+      return `attached ${e.to ?? "a file"}`;
     default:
       return e.type;
   }

@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { PRIORITIES, SAVED_VIEWS, SORT_FIELDS, SORT_ORDERS, TEAMS, TICKET_STATUSES } from "../types/ticket";
+import { PRIORITIES, SAVED_VIEWS, SORT_FIELDS, SORT_ORDERS, TICKET_STATUSES } from "../types/ticket";
+
+// Team names are DB-driven (admin-managed), not a fixed compile-time set, so
+// they're validated as non-empty strings rather than a static zod enum.
+const teamNameSchema = z.string().trim().min(1).max(50);
 
 export const createTicketSchema = z.object({
   customer_name: z.string().trim().min(1, "customer_name is required"),
@@ -14,7 +18,7 @@ export const updateTicketSchema = z
     status: z.enum(TICKET_STATUSES).optional(),
     notes: z.string().trim().min(1).optional(),
     priority: z.enum(PRIORITIES).optional(),
-    team: z.enum(TEAMS).nullable().optional(),
+    team: teamNameSchema.nullable().optional(),
     assigned_to_user_id: z.number().int().positive().nullable().optional(),
     vendor_id: z.number().int().positive().nullable().optional(),
     next_action: z.string().trim().max(500).nullable().optional(),
@@ -45,7 +49,7 @@ export const addNoteSchema = z.object({
 export const listTicketsQuerySchema = z.object({
   status: z.enum(TICKET_STATUSES).optional(),
   search: z.string().trim().min(1).optional(),
-  team: z.enum(TEAMS).optional(),
+  team: teamNameSchema.optional(),
   view: z.enum(SAVED_VIEWS).optional(),
   page: z.coerce.number().int().min(1).optional(),
   page_size: z.coerce.number().int().min(1).max(100).optional(),

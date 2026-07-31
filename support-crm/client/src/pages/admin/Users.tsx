@@ -37,6 +37,15 @@ export const AdminUsers = () => {
       showToast(err?.response?.data?.error ?? "Failed to update status", "error"),
   });
 
+  const unlockMutation = useMutation({
+    mutationFn: (id: number) => adminService.unlockUser(id),
+    onSuccess: () => {
+      invalidate();
+      showToast("Account unlocked");
+    },
+    onError: () => showToast("Failed to unlock account", "error"),
+  });
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
       <h1 className="text-2xl font-semibold text-ink">Users</h1>
@@ -63,6 +72,7 @@ export const AdminUsers = () => {
               <tbody className="divide-y divide-line">
                 {users.map((u) => {
                   const isSelf = u.id === currentUser?.id;
+                  const isLocked = !!u.lockedUntil && new Date(u.lockedUntil).getTime() > Date.now();
                   return (
                     <tr key={u.id} className={!u.active ? "opacity-60" : ""}>
                       <td className="px-4 py-3 font-medium text-ink">{u.name}</td>
@@ -94,9 +104,23 @@ export const AdminUsers = () => {
                         >
                           {u.active ? "Active" : "Deactivated"}
                         </span>
+                        {isLocked && (
+                          <span className="ml-1.5 inline-flex items-center rounded-full bg-warning-soft px-2.5 py-0.5 text-xs font-medium text-warning">
+                            Locked
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-ink-secondary">{formatDate(u.createdAt)}</td>
                       <td className="px-4 py-3 text-right">
+                        {isLocked && (
+                          <button
+                            onClick={() => unlockMutation.mutate(u.id)}
+                            disabled={unlockMutation.isPending}
+                            className="mr-3 text-xs font-medium text-accent hover:underline disabled:opacity-50"
+                          >
+                            Unlock
+                          </button>
+                        )}
                         {!isSelf && (
                           <button
                             onClick={() =>

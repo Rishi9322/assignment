@@ -3,13 +3,18 @@ import type { TicketSummary } from "../types/ticket";
 import { StatusBadge } from "./StatusBadge";
 import { PriorityBadge } from "./PriorityBadge";
 import { Avatar } from "./Avatar";
+import { Pagination } from "./Pagination";
 import { formatAge, formatDate } from "../utils/date";
 
 interface Props {
   tickets: TicketSummary[];
+  page?: number;
+  pageSize?: number;
+  total?: number;
+  onPageChange?: (page: number) => void;
 }
 
-export const TicketTable = ({ tickets }: Props) => {
+export const TicketTable = ({ tickets, page, pageSize, total, onPageChange }: Props) => {
   if (tickets.length === 0) {
     return (
       <div className="flex flex-col items-center rounded-md border border-dashed border-line py-16 text-center">
@@ -102,6 +107,9 @@ export const TicketTable = ({ tickets }: Props) => {
           ))}
         </tbody>
       </table>
+      {page !== undefined && pageSize !== undefined && total !== undefined && onPageChange && (
+        <Pagination page={page} pageSize={pageSize} total={total} onPageChange={onPageChange} />
+      )}
     </div>
   );
 };

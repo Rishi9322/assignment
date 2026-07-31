@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
-import { TEAMS } from "../types/ticket";
+import { useTeams } from "../hooks/useTeams";
 
 export const Register = () => {
   const [form, setForm] = useState({ name: "", email: "", password: "", team: "" });
@@ -10,6 +10,7 @@ export const Register = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
+  const { data: teams = [] } = useTeams();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -71,7 +72,7 @@ export const Register = () => {
               className="field mt-1"
             >
               <option value="">None</option>
-              {TEAMS.map((t) => (
+              {teams.map((t) => (
                 <option key={t} value={t}>
                   {t}
                 </option>

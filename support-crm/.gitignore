@@ -7,6 +7,9 @@ dist/
 server/prisma/dev.db
 server/prisma/dev.db-journal
 
+# Uploaded attachments
+server/uploads/
+
 # OS
 .DS_Store
 Thumbs.db

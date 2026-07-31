@@ -6,11 +6,13 @@ import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { SearchBar } from "../components/SearchBar";
 import { FilterDropdown } from "../components/FilterDropdown";
 import { TeamFilterDropdown } from "../components/TeamFilterDropdown";
+import { SavedViewTabs } from "../components/SavedViewTabs";
+import { SortControl } from "../components/SortControl";
 import { TicketTable } from "../components/TicketTable";
 import { TrendChart } from "../components/TrendChart";
 import { RecentActivity } from "../components/RecentActivity";
 import { Loader } from "../components/Loader";
-import type { Team, TicketStatus } from "../types/ticket";
+import type { SavedView, SortField, SortOrder, Team, TicketStatus } from "../types/ticket";
 
 const TONE_STYLES = {
   default: { border: "card", label: "text-ink-secondary", value: "text-ink" },
@@ -26,32 +28,47 @@ const StatCard = ({
   label,
   value,
   tone = "default",
+  title,
 }: {
   label: string;
   value: number | undefined;
   tone?: keyof typeof TONE_STYLES;
+  title?: string;
 }) => {
-  const active = tone !== "default" && !!value;
-  const styles = TONE_STYLES[active ? tone : "default"];
+  const isToned = tone !== "default" && !!value;
+  const styles = TONE_STYLES[isToned ? tone : "default"];
   return (
-    <div className={`rounded-md border p-4 ${styles.border}`}>
+    <div className={`rounded-md border p-4 ${styles.border}`} title={title}>
       <p className={`text-xs font-medium uppercase tracking-wide ${styles.label}`}>{label}</p>
       <p className={`mt-1 text-2xl font-semibold ${styles.value}`}>{value ?? "-"}</p>
     </div>
   );
 };
 
+const PAGE_SIZE = 10;
+
 export const Dashboard = () => {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<TicketStatus | "">("");
   const [team, setTeam] = useState<Team | "">("");
+  const [view, setView] = useState<SavedView>("all");
+  const [sort, setSort] = useState<SortField>("created_at");
+  const [order, setOrder] = useState<SortOrder>("desc");
+  const [page, setPage] = useState(1);
   const debouncedSearch = useDebouncedValue(search);
 
-  const { data: tickets, isLoading, isError } = useTickets(
-    status || undefined,
-    debouncedSearch || undefined,
-    team || undefined
-  );
+  const resetToFirstPage = () => setPage(1);
+
+  const { data: result, isLoading, isError } = useTickets({
+    status: status || undefined,
+    search: debouncedSearch || undefined,
+    team: team || undefined,
+    view,
+    sort,
+    order,
+    page,
+    page_size: PAGE_SIZE,
+  });
   const { data: stats } = useStats();
   const { data: trend } = useTrend();
 
@@ -62,7 +79,11 @@ export const Dashboard = () => {
       <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
         <StatCard label="Total" value={stats?.total} />
         <StatCard label="Open" value={stats?.open} />
-        <StatCard label="In Progress" value={stats?.in_progress} />
+        <StatCard
+          label="Active"
+          value={stats?.active}
+          title="Triaged, In Progress, or waiting on customer/vendor — everything past intake, not yet resolved or closed"
+        />
         <StatCard label="Closed" value={stats?.closed} />
       </div>
 
@@ -97,15 +118,52 @@ export const Dashboard = () => {
             </div>
           )}
         </div>
-        <RecentActivity tickets={tickets ?? []} />
+        <RecentActivity />
       </div>
 
-      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+      <div className="mt-8">
+        <SavedViewTabs
+          value={view}
+          onChange={(v) => {
+            setView(v);
+            resetToFirstPage();
+          }}
+        />
+      </div>
+
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row">
         <div className="flex-1">
-          <SearchBar value={search} onChange={setSearch} />
+          <SearchBar
+            value={search}
+            onChange={(v) => {
+              setSearch(v);
+              resetToFirstPage();
+            }}
+          />
         </div>
-        <FilterDropdown value={status} onChange={setStatus} />
-        <TeamFilterDropdown value={team} onChange={setTeam} />
+        <FilterDropdown
+          value={status}
+          onChange={(v) => {
+            setStatus(v);
+            resetToFirstPage();
+          }}
+        />
+        <TeamFilterDropdown
+          value={team}
+          onChange={(v) => {
+            setTeam(v);
+            resetToFirstPage();
+          }}
+        />
+        <SortControl
+          sort={sort}
+          order={order}
+          onChange={(s, o) => {
+            setSort(s);
+            setOrder(o);
+            resetToFirstPage();
+          }}
+        />
       </div>
 
       <div className="mt-6">
@@ -113,7 +171,15 @@ export const Dashboard = () => {
         {isError && (
           <p className="text-sm text-danger">Failed to load tickets. Is the API running?</p>
         )}
-        {tickets && <TicketTable tickets={tickets} />}
+        {result && (
+          <TicketTable
+            tickets={result.data}
+            page={result.page}
+            pageSize={result.page_size}
+            total={result.total}
+            onPageChange={setPage}
+          />
+        )}
       </div>
     </div>
   );

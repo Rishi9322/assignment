@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { prisma } from "../config/prisma";
+import { ticketEventRepository } from "../repositories/ticketEvent.repository";
 import { BLOCKED_STATUSES, TERMINAL_STATUSES, TicketStatus } from "../types/ticket";
 import { computeSlaState } from "../utils/sla";
 
@@ -21,7 +22,7 @@ statsRouter.get("/", async (_req, res, next) => {
     const [
       total,
       open,
-      inProgress,
+      active,
       closed,
       unassigned,
       overdue,
@@ -70,7 +71,10 @@ statsRouter.get("/", async (_req, res, next) => {
     res.json({
       total,
       open,
-      in_progress: inProgress,
+      // Everything past intake but not yet terminal — Triaged, InProgress, and
+      // both waiting states. Deliberately not called "in_progress": it would
+      // undercount by hiding the waiting-state tickets bucketed in here too.
+      active,
       closed,
       unassigned,
       overdue,
@@ -80,6 +84,26 @@ statsRouter.get("/", async (_req, res, next) => {
       blocked,
       blocked_missing_next_action: blockedMissingNextAction,
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+statsRouter.get("/recent-activity", async (_req, res, next) => {
+  try {
+    const events = await ticketEventRepository.findRecent(8);
+    res.json(
+      events.map((e) => ({
+        id: e.id,
+        type: e.type,
+        from: e.fromValue,
+        to: e.toValue,
+        message: e.message,
+        actor: e.actor ? { id: e.actor.id, name: e.actor.name, email: e.actor.email } : null,
+        ticket: { ticket_id: e.ticket.ticketId, subject: e.ticket.subject, status: e.ticket.status },
+        created_at: e.createdAt,
+      }))
+    );
   } catch (err) {
     next(err);
   }

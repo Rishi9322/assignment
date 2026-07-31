@@ -29,6 +29,8 @@ const describe = (event: TicketEvent): string => {
       return `Marked as ${statusLabel(event.to)}`;
     case "next_action_set":
       return event.to ? "Set the next action" : "Cleared the next action";
+    case "attachment_added":
+      return `Attached ${event.to ?? "a file"}`;
     default:
       return event.type;
   }

@@ -1,18 +1,33 @@
 import { api } from "./api";
 import type {
   CreateTicketPayload,
+  PaginatedTickets,
   Priority,
+  RecentActivityEntry,
+  SavedView,
+  SortField,
+  SortOrder,
   Stats,
   Team,
   TicketDetail,
   TicketStatus,
-  TicketSummary,
   TrendPoint,
 } from "../types/ticket";
 
+export interface ListTicketsParams {
+  status?: TicketStatus;
+  search?: string;
+  team?: Team;
+  view?: SavedView;
+  page?: number;
+  page_size?: number;
+  sort?: SortField;
+  order?: SortOrder;
+}
+
 export const ticketService = {
-  async list(params: { status?: TicketStatus; search?: string; team?: Team }) {
-    const { data } = await api.get<TicketSummary[]>("/tickets", { params });
+  async list(params: ListTicketsParams) {
+    const { data } = await api.get<PaginatedTickets>("/tickets", { params });
     return data;
   },
 
@@ -69,6 +84,11 @@ export const ticketService = {
 
   async trend() {
     const { data } = await api.get<TrendPoint[]>("/stats/trend");
+    return data;
+  },
+
+  async recentActivity() {
+    const { data } = await api.get<RecentActivityEntry[]>("/stats/recent-activity");
     return data;
   },
 };

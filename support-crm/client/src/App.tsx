@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router-dom";
 import { AppRoutes } from "./routes/AppRoutes";
+import { BrandingEffect } from "./components/BrandingEffect";
 import { ToastProvider } from "./components/Toast";
 import { AuthProvider } from "./hooks/useAuth";
 import { ThemeProvider } from "./hooks/useTheme";
@@ -12,6 +13,7 @@ function App() {
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
         <ToastProvider>
+          <BrandingEffect />
           <BrowserRouter>
             <AuthProvider>
               <AppRoutes />

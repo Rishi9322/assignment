@@ -1,9 +1,16 @@
 import jwt, { SignOptions } from "jsonwebtoken";
 import { env } from "../config/env";
 import { AuthTokenPayload, MfaTokenPayload } from "../types/user";
+import { settingsRepository } from "../repositories/settings.repository";
 
-export const signToken = (payload: AuthTokenPayload): string =>
-  jwt.sign(payload, env.jwtSecret, { expiresIn: env.jwtExpiresIn } as SignOptions);
+// Session length is admin-configurable (System Settings > Security) rather
+// than a fixed env var, so it takes effect for new logins without a redeploy.
+export const signToken = async (payload: AuthTokenPayload): Promise<string> => {
+  const settings = await settingsRepository.get();
+  return jwt.sign(payload, env.jwtSecret, {
+    expiresIn: settings.sessionTimeoutMinutes * 60,
+  } as SignOptions);
+};
 
 export const verifyToken = (token: string): AuthTokenPayload =>
   jwt.verify(token, env.jwtSecret) as unknown as AuthTokenPayload;

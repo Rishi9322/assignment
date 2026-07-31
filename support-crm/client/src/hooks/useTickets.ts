@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { ticketService } from "../services/ticket.service";
-import type { Team, TicketStatus } from "../types/ticket";
+import type { ListTicketsParams } from "../services/ticket.service";
 
-export const useTickets = (status?: TicketStatus, search?: string, team?: Team) =>
+export const useTickets = (params: ListTicketsParams) =>
   useQuery({
-    queryKey: ["tickets", status, search, team],
-    queryFn: () => ticketService.list({ status, search, team }),
+    queryKey: ["tickets", params],
+    queryFn: () => ticketService.list(params),
+    placeholderData: (previous) => previous,
   });

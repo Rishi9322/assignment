@@ -17,10 +17,15 @@ model User {
   active       Boolean  @default(true)
   createdAt    DateTime @default(now())
 
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+
   ticketsCreated  Ticket[]      @relation("TicketCreatedBy")
   ticketsAssigned Ticket[]      @relation("TicketAssignedTo")
   passkeys        Passkey[]
   ticketEvents    TicketEvent[]
+  attachments     Attachment[]
+  notifications   Notification[]
 }
 
 model Passkey {
@@ -35,6 +40,25 @@ model Passkey {
   transports   String?
   nickname     String?
   createdAt    DateTime @default(now())
+}
+
+model Contact {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  phone     String?
+  company   String?
+  notes     String?
+  createdAt DateTime @default(now())
+
+  tickets Ticket[]
+}
+
+model Team {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  archived  Boolean  @default(false)
+  createdAt DateTime @default(now())
 }
 
 model Vendor {
@@ -74,8 +98,95 @@ model Ticket {
   assignedToUser   User?   @relation("TicketAssignedTo", fields: [assignedToUserId], references: [id])
   vendorId         Int?
   vendor           Vendor? @relation(fields: [vendorId], references: [id])
+  contactId        Int?
+  contact          Contact? @relation(fields: [contactId], references: [id])
 
-  events TicketEvent[]
+  events        TicketEvent[]
+  attachments   Attachment[]
+  notifications Notification[]
+}
+
+model Attachment {
+  id               Int      @id @default(autoincrement())
+  ticketId         Int
+  ticket           Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  storedFileName   String
+  originalFileName String
+  mimeType         String
+  size             Int
+  uploadedByUserId Int
+  uploadedByUser   User     @relation(fields: [uploadedByUserId], references: [id])
+  createdAt        DateTime @default(now())
+}
+
+// Singleton row (id is always 1) — org-wide branding and cosmetic label
+// overrides for the fixed status/priority sets. The underlying status and
+// priority *values* stay compile-time constants (SLA and state-machine logic
+// depends on their exact literals); only their admin-facing display labels
+// are configurable here.
+model Settings {
+  id             Int      @id @default(1)
+  orgName        String   @default("Support CRM")
+  supportEmail   String?
+  accentColor    String   @default("#2563eb")
+  statusLabels   String   @default("{}")
+  priorityLabels String   @default("{}")
+
+  sessionTimeoutMinutes Int @default(10080) // 7 days
+  maxLoginAttempts      Int @default(5)
+  lockoutMinutes        Int @default(15)
+
+  updatedAt      DateTime @updatedAt
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  message   String
+  ticketId  Int?
+  ticket    Ticket?  @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model RolePermission {
+  id         Int    @id @default(autoincrement())
+  role       String
+  permission String
+
+  @@unique([role, permission])
+}
+
+model SlaRule {
+  id        Int      @id @default(autoincrement())
+  priority  String   @unique
+  hours     Int
+  updatedAt DateTime @updatedAt
+}
+
+model Webhook {
+  id        Int      @id @default(autoincrement())
+  url       String
+  secret    String
+  events    String // JSON-encoded string[] of subscribed event names, or ["*"] for all
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  deliveries WebhookDelivery[]
+}
+
+model WebhookDelivery {
+  id           Int      @id @default(autoincrement())
+  webhookId    Int
+  webhook      Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+  eventType    String
+  payload      String
+  statusCode   Int?
+  success      Boolean
+  error        String?
+  createdAt    DateTime @default(now())
 }
 
 model TicketEvent {

@@ -47,9 +47,11 @@ export const ticketController = {
 
   async list(req: Request, res: Response, next: NextFunction) {
     try {
-      const tickets = await ticketService.listTickets(req.query as any);
-      res.json(
-        tickets.map((t) => {
+      const { tickets, total } = await ticketService.listTickets(req.query as any, req.user!.sub);
+      const page = Number((req.query as any).page) || 1;
+      const pageSize = Number((req.query as any).page_size) || 25;
+      res.json({
+        data: tickets.map((t) => {
           const sla = slaState(t.createdAt, t.dueAt, t.status);
           return {
             ticket_id: t.ticketId,
@@ -67,8 +69,11 @@ export const ticketController = {
             created_at: t.createdAt,
             updated_at: t.updatedAt,
           };
-        })
-      );
+        }),
+        total,
+        page,
+        page_size: pageSize,
+      });
     } catch (err) {
       next(err);
     }
@@ -87,6 +92,7 @@ export const ticketController = {
         status: ticket.status,
         priority: ticket.priority,
         created_by: serializeUser(ticket.createdByUser),
+        contact_id: ticket.contactId,
         team: ticket.team,
         assigned_to: serializeUser(ticket.assignedToUser),
         vendor: serializeVendor(ticket.vendor),

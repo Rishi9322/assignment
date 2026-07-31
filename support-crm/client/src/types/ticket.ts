@@ -28,8 +28,31 @@ export const STATUS_LABELS: Record<TicketStatus, string> = {
 export const PRIORITIES = ["Low", "Medium", "High", "Urgent"] as const;
 export type Priority = (typeof PRIORITIES)[number];
 
-export const TEAMS = ["Technical", "Billing", "Sales", "General"] as const;
-export type Team = (typeof TEAMS)[number];
+// Team names are DB-driven (admin-managed via /api/admin/team-directory),
+// not a fixed compile-time set — fetch the active list with useTeams().
+export type Team = string;
+
+export const SAVED_VIEWS = ["all", "mine", "urgent", "unassigned", "blocked"] as const;
+export type SavedView = (typeof SAVED_VIEWS)[number];
+export const SAVED_VIEW_LABELS: Record<SavedView, string> = {
+  all: "All",
+  mine: "Mine",
+  urgent: "Urgent",
+  unassigned: "Unassigned",
+  blocked: "Blocked",
+};
+
+export const SORT_FIELDS = ["created_at", "updated_at", "due_at", "priority"] as const;
+export type SortField = (typeof SORT_FIELDS)[number];
+export const SORT_FIELD_LABELS: Record<SortField, string> = {
+  created_at: "Created",
+  updated_at: "Updated",
+  due_at: "Due",
+  priority: "Priority",
+};
+
+export const SORT_ORDERS = ["asc", "desc"] as const;
+export type SortOrder = (typeof SORT_ORDERS)[number];
 
 export const EVENT_TYPES = [
   "created",
@@ -40,8 +63,20 @@ export const EVENT_TYPES = [
   "reopened",
   "blocked",
   "next_action_set",
+  "attachment_added",
 ] as const;
 export type TicketEventType = (typeof EVENT_TYPES)[number];
+
+export interface RecentActivityEntry {
+  id: number;
+  type: TicketEventType;
+  from: string | null;
+  to: string | null;
+  message: string | null;
+  actor: Pick<User, "id" | "name" | "email"> | null;
+  ticket: { ticket_id: string; subject: string; status: TicketStatus };
+  created_at: string;
+}
 
 export interface TicketEvent {
   id: number;
@@ -50,6 +85,15 @@ export interface TicketEvent {
   to: string | null;
   message: string | null;
   actor: Pick<User, "id" | "name" | "email"> | null;
+  created_at: string;
+}
+
+export interface Attachment {
+  id: number;
+  file_name: string;
+  mime_type: string;
+  size: number;
+  uploaded_by: Pick<User, "id" | "name">;
   created_at: string;
 }
 
@@ -79,6 +123,7 @@ export interface TicketDetail {
   status: TicketStatus;
   priority: Priority;
   created_by: Pick<User, "id" | "name" | "email">;
+  contact_id: number | null;
   team: Team | null;
   assigned_to: Pick<User, "id" | "name" | "email"> | null;
   vendor: Vendor | null;
@@ -105,7 +150,7 @@ export interface CreateTicketPayload {
 export interface Stats {
   total: number;
   open: number;
-  in_progress: number;
+  active: number;
   closed: number;
   unassigned: number;
   overdue: number;
@@ -119,4 +164,11 @@ export interface Stats {
 export interface TrendPoint {
   date: string;
   count: number;
+}
+
+export interface PaginatedTickets {
+  data: TicketSummary[];
+  total: number;
+  page: number;
+  page_size: number;
 }

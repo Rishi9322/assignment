@@ -1,3 +1,4 @@
+import { usePriorityLabel } from "../hooks/useLabels";
 import type { Priority } from "../types/ticket";
 
 const COLORS: Record<Priority, string> = {
@@ -7,10 +8,13 @@ const COLORS: Record<Priority, string> = {
   Urgent: "bg-red-100 text-red-700 dark:bg-red-400/15 dark:text-red-300",
 };
 
-export const PriorityBadge = ({ priority }: { priority: Priority }) => (
-  <span
-    className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ${COLORS[priority]}`}
-  >
-    {priority}
-  </span>
-);
+export const PriorityBadge = ({ priority }: { priority: Priority }) => {
+  const priorityLabel = usePriorityLabel();
+  return (
+    <span
+      className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ${COLORS[priority]}`}
+    >
+      {priorityLabel(priority)}
+    </span>
+  );
+};

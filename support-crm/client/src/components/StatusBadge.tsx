@@ -1,4 +1,4 @@
-import { STATUS_LABELS } from "../types/ticket";
+import { useStatusLabel } from "../hooks/useLabels";
 import type { TicketStatus } from "../types/ticket";
 
 const COLORS: Record<TicketStatus, string> = {
@@ -11,10 +11,13 @@ const COLORS: Record<TicketStatus, string> = {
   Closed: "bg-green-100 text-green-800 dark:bg-green-400/15 dark:text-green-300",
 };
 
-export const StatusBadge = ({ status }: { status: TicketStatus }) => (
-  <span
-    className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ${COLORS[status]}`}
-  >
-    {STATUS_LABELS[status]}
-  </span>
-);
+export const StatusBadge = ({ status }: { status: TicketStatus }) => {
+  const statusLabel = useStatusLabel();
+  return (
+    <span
+      className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ${COLORS[status]}`}
+    >
+      {statusLabel(status)}
+    </span>
+  );
+};

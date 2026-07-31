@@ -27,6 +27,7 @@ export const EVENT_TYPES = [
   "reopened",
   "blocked",
   "next_action_set",
+  "attachment_added",
 ] as const;
 export type TicketEventType = (typeof EVENT_TYPES)[number];
 

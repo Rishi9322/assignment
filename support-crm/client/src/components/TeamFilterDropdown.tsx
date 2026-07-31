@@ -1,4 +1,4 @@
-import { TEAMS } from "../types/ticket";
+import { useTeams } from "../hooks/useTeams";
 import type { Team } from "../types/ticket";
 
 interface Props {
@@ -6,17 +6,21 @@ interface Props {
   onChange: (value: Team | "") => void;
 }
 
-export const TeamFilterDropdown = ({ value, onChange }: Props) => (
-  <select
-    value={value}
-    onChange={(e) => onChange(e.target.value as Team | "")}
-    className="field w-auto"
-  >
-    <option value="">All teams</option>
-    {TEAMS.map((team) => (
-      <option key={team} value={team}>
-        {team}
-      </option>
-    ))}
-  </select>
-);
+export const TeamFilterDropdown = ({ value, onChange }: Props) => {
+  const { data: teams = [] } = useTeams();
+
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value as Team | "")}
+      className="field w-auto"
+    >
+      <option value="">All teams</option>
+      {teams.map((team) => (
+        <option key={team} value={team}>
+          {team}
+        </option>
+      ))}
+    </select>
+  );
+};

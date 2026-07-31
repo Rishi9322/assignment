@@ -129,10 +129,11 @@
 }
 
 .theme__toggle:checked ~ .theme__icon .theme__icon-part:nth-child(1) {
+  /* Stay at the default centered position (top/left: calc(50% - 0.5em)) —
+     the original snippet's fixed 0.2em/-0.2em offset was tuned for its
+     larger dimensions and pushes the moon off-center at this size. */
   box-shadow: 0.2em -0.2em 0 0.2em hsl(0, 0%, 100%) inset;
   transform: scale(1);
-  top: 0.2em;
-  left: -0.2em;
 }
 
 .theme__toggle:checked ~ .theme__icon .theme__icon-part ~ .theme__icon-part {

@@ -18,6 +18,7 @@ import { comparePassword, hashPassword } from "../utils/password";
 import { signToken, signMfaToken, verifyMfaToken } from "../utils/jwt";
 import { challengeStore } from "../utils/challengeStore";
 import { env } from "../config/env";
+import { settingsRepository } from "../repositories/settings.repository";
 import { LoginInput, RegisterInput, Role } from "../types/user";
 
 type UserRecord = {
@@ -28,8 +29,8 @@ type UserRecord = {
   team: string | null;
 };
 
-const toAuthResponse = (user: UserRecord) => {
-  const token = signToken({
+const toAuthResponse = async (user: UserRecord) => {
+  const token = await signToken({
     sub: user.id,
     email: user.email,
     name: user.name,
@@ -44,6 +45,16 @@ const toAuthResponse = (user: UserRecord) => {
 const ensureActive = (user: { active: boolean }) => {
   if (!user.active) {
     throw new ApiError(403, "This account has been deactivated. Contact an administrator.");
+  }
+};
+
+const ensureNotLocked = (user: { lockedUntil: Date | null }) => {
+  if (user.lockedUntil && user.lockedUntil.getTime() > Date.now()) {
+    const minutesLeft = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60000);
+    throw new ApiError(
+      423,
+      `Too many failed login attempts. Try again in ${minutesLeft} minute${minutesLeft === 1 ? "" : "s"}.`
+    );
   }
 };
 
@@ -72,7 +83,7 @@ export const authService = {
       passwordHash,
       team: input.team,
     });
-    return toAuthResponse(user);
+    return await toAuthResponse(user);
   },
 
   async login(input: LoginInput) {
@@ -80,15 +91,33 @@ export const authService = {
     if (!user) {
       throw new ApiError(401, "Invalid email or password");
     }
+    ensureNotLocked(user);
+
     const valid = await comparePassword(input.password, user.passwordHash);
     if (!valid) {
+      const settings = await settingsRepository.get();
+      const attempts = user.failedLoginAttempts + 1;
+      const lockedUntil =
+        attempts >= settings.maxLoginAttempts
+          ? new Date(Date.now() + settings.lockoutMinutes * 60 * 1000)
+          : null;
+      await userRepository.recordFailedLogin(user.id, attempts, lockedUntil);
+      if (lockedUntil) {
+        throw new ApiError(
+          423,
+          `Too many failed login attempts. Try again in ${settings.lockoutMinutes} minutes.`
+        );
+      }
       throw new ApiError(401, "Invalid email or password");
+    }
+    if (user.failedLoginAttempts > 0) {
+      await userRepository.clearLockout(user.id);
     }
     ensureActive(user);
 
     const passkeys = await passkeyRepository.findByUserId(user.id);
     if (passkeys.length === 0) {
-      return toAuthResponse(user);
+      return await toAuthResponse(user);
     }
 
     const options = await generateAuthenticationOptions({
@@ -147,7 +176,7 @@ export const authService = {
       throw new ApiError(404, "User not found");
     }
     ensureActive(user);
-    return toAuthResponse(user);
+    return await toAuthResponse(user);
   },
 
   async me(userId: number) {

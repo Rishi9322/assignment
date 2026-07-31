@@ -1,8 +1,6 @@
 import { Router } from "express";
-import { TEAMS } from "../types/ticket";
+import { teamController } from "../controllers/team.controller";
 
 export const teamRouter = Router();
 
-teamRouter.get("/", (_req, res) => {
-  res.json(TEAMS);
-});
+teamRouter.get("/", teamController.listActiveNames);

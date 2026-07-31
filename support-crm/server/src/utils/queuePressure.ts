@@ -1,4 +1,4 @@
-import { TERMINAL_STATUSES, Team, TicketStatus } from "../types/ticket";
+import { TERMINAL_STATUSES, TicketStatus } from "../types/ticket";
 import { computeSlaState } from "./sla";
 
 interface TeamTicket {
@@ -13,7 +13,7 @@ interface TeamTicket {
 }
 
 export interface TeamWorkload {
-  team: Team;
+  team: string;
   backlog: number;
   overdue: number;
   at_risk: number;
@@ -31,7 +31,7 @@ const AGING_THRESHOLD_MS = 3 * 24 * 60 * 60 * 1000;
 // count of the signals that make a team's queue hard to keep up with: raw
 // backlog size, urgent-priority load, tickets already breaching SLA, and
 // tickets that have been sitting for 3+ days without resolution.
-export const computeTeamWorkload = (team: Team, tickets: TeamTicket[]): TeamWorkload => {
+export const computeTeamWorkload = (team: string, tickets: TeamTicket[]): TeamWorkload => {
   const now = new Date();
   const backlogTickets = tickets.filter((t) => !TERMINAL_STATUSES.includes(t.status as TicketStatus));
 

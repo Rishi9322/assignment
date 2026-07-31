@@ -26,19 +26,29 @@ export const ticketRepository = {
   // ticketId is derived from the row's own autoincrement id inside a transaction,
   // so concurrent creates can never race to the same TKT-### value (unlike deriving
   // it from a separately-read count()).
-  create: (data: CreateTicketInput & { createdByUserId: number }) =>
-    prisma.$transaction(
+  create: async (data: CreateTicketInput & { createdByUserId: number }) => {
+    const priority = data.priority ?? "Medium";
+    const dueAt = await computeDueAt(priority);
+    return prisma.$transaction(
       async (tx) => {
-        const priority = data.priority ?? "Medium";
+        // Every ticket links to a persistent Contact keyed by email, so a
+        // customer's history is visible across tickets instead of the
+        // customer being just a name/email string repeated on each row.
+        const contact = await tx.contact.upsert({
+          where: { email: data.customer_email },
+          update: { name: data.customer_name },
+          create: { email: data.customer_email, name: data.customer_name },
+        });
         const created = await tx.ticket.create({
           data: {
             ticketId: `pending-${randomUUID()}`,
             customerName: data.customer_name,
             customerEmail: data.customer_email,
+            contactId: contact.id,
             subject: data.subject,
             description: data.description,
             priority,
-            dueAt: computeDueAt(priority),
+            dueAt,
             createdByUserId: data.createdByUserId,
           },
         });
@@ -60,7 +70,8 @@ export const ticketRepository = {
       // behind the single writer lock even in WAL mode, so give queued
       // transactions more room than Prisma's 5s default before giving up.
       { timeout: 15000, maxWait: 15000 }
-    ),
+    );
+  },
 
   findMany: async (query: TicketListQuery, viewerId: number) => {
     const where: Prisma.TicketWhereInput = {};
@@ -153,6 +164,7 @@ export const ticketRepository = {
         createdByUser: { select: userSelect },
         assignedToUser: { select: userSelect },
         vendor: true,
+        contact: true,
       },
     }),
 

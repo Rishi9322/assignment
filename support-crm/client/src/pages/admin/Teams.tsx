@@ -1,5 +1,9 @@
+import { useState } from "react";
+import type { FormEvent } from "react";
 import { useTeamWorkload } from "../../hooks/useTeamWorkload";
+import { useCreateTeam, useTeamDirectory, useUpdateTeam } from "../../hooks/useTeamDirectory";
 import { Loader } from "../../components/Loader";
+import { useToast } from "../../components/Toast";
 import type { TeamWorkload } from "../../types/admin";
 
 const pressureTone = (score: number) => {
@@ -66,6 +70,89 @@ const TeamCard = ({ w }: { w: TeamWorkload }) => {
   );
 };
 
+const TeamDirectoryManager = () => {
+  const { data: teams, isLoading } = useTeamDirectory();
+  const createTeam = useCreateTeam();
+  const updateTeam = useUpdateTeam();
+  const { showToast } = useToast();
+  const [name, setName] = useState("");
+
+  const handleCreate = (e: FormEvent) => {
+    e.preventDefault();
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    createTeam.mutate(
+      { name: trimmed },
+      {
+        onSuccess: () => {
+          setName("");
+          showToast("Team created");
+        },
+        onError: (err: any) =>
+          showToast(err?.response?.data?.error ?? "Failed to create team", "error"),
+      }
+    );
+  };
+
+  const toggleArchived = (id: number, archived: boolean) => {
+    updateTeam.mutate(
+      { id, payload: { archived } },
+      {
+        onSuccess: () => showToast(archived ? "Team archived" : "Team reactivated"),
+        onError: (err: any) =>
+          showToast(err?.response?.data?.error ?? "Failed to update team", "error"),
+      }
+    );
+  };
+
+  return (
+    <div className="card p-5">
+      <h2 className="text-sm font-semibold text-ink">Team directory</h2>
+      <p className="mt-1 text-xs text-ink-muted">
+        Archived teams stay on existing tickets but drop out of the assignment and filter dropdowns.
+      </p>
+
+      <form onSubmit={handleCreate} className="mt-4 flex gap-2">
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="New team name"
+          className="field flex-1"
+        />
+        <button
+          type="submit"
+          disabled={createTeam.isPending || !name.trim()}
+          className="btn-primary shrink-0"
+        >
+          Add team
+        </button>
+      </form>
+
+      <div className="mt-4">
+        {isLoading && <Loader />}
+        {teams && (
+          <ul className="divide-y divide-line">
+            {teams.map((t) => (
+              <li key={t.id} className="flex items-center justify-between py-2 text-sm">
+                <span className={t.archived ? "text-ink-muted line-through" : "text-ink"}>
+                  {t.name}
+                </span>
+                <button
+                  onClick={() => toggleArchived(t.id, !t.archived)}
+                  disabled={updateTeam.isPending}
+                  className="text-xs font-medium text-accent hover:underline disabled:opacity-50"
+                >
+                  {t.archived ? "Reactivate" : "Archive"}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export const AdminTeams = () => {
   const { data: workloads, isLoading } = useTeamWorkload();
 
@@ -76,6 +163,10 @@ export const AdminTeams = () => {
         Backlog and pressure per team — a deterministic score from backlog size, urgent load,
         SLA breaches, and aging tickets, not a prediction.
       </p>
+
+      <div className="mt-6">
+        <TeamDirectoryManager />
+      </div>
 
       <div className="mt-6">
         {isLoading && <Loader />}

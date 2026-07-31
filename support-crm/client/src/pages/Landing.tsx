@@ -1,6 +1,7 @@
 import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { ThemeToggle } from "../components/ThemeToggle";
+import { VoiceTicketDemo } from '../components/voice-ticket/VoiceTicketDemo';
 
 const FEATURES = [
   {
@@ -172,7 +173,67 @@ export const Landing = () => {
         </div>
       </section>
 
+      {/* Voice Ticket Creation — Try the Live Demo */}
+      <section id="voice-demo" className="mx-auto max-w-6xl px-4 py-16 border-t border-line">
+        <div className="text-center mb-12">
+          <p className="text-xs font-medium uppercase tracking-widest text-accent">NEW</p>
+          <h2 className="mt-2 text-4xl font-semibold text-ink">Create a ticket by speaking</h2>
+          <p className="mt-4 max-w-3xl mx-auto text-lg text-ink-secondary">
+            Describe the issue out loud. Speech recognition runs locally in your browser — audio
+            never leaves your device — and a lightweight keyword parser drafts a title, priority,
+            and category from what you said, so you can review and confirm instead of typing from
+            scratch.
+          </p>
+          <div className="mt-6 flex justify-center gap-4">
+            <a href="#voice-demo" className="btn-primary">Try the demo below</a>
+            <Link to="/voice-ticket" className="rounded-md border border-line px-6 py-2 text-sm font-medium hover:bg-surface-alt">Open fullscreen demo →</Link>
+          </div>
+        </div>
+
+        <div className="prose prose-lg max-w-none mb-12 text-ink-secondary">
+          <h3 className="text-2xl font-semibold text-ink">How it works</h3>
+          <p>
+            Press record and describe the issue in plain language. The browser's built-in
+            Speech Recognition API (Chrome and Edge; other browsers will show an unsupported
+            message) transcribes as you talk. When you stop, a simple keyword-matching pass over
+            the transcript proposes a title, a priority (looking for words like "urgent" or
+            "critical"), and a category — this is pattern matching, not a language model, so
+            treat the draft as a starting point, not a finished ticket.
+          </p>
+          <p>
+            The 3D sphere visualizer (built with React Three Fiber) reacts to whether the mic is
+            listening — it's a visual indicator, not an audio analysis. Review the draft, edit
+            anything that's wrong, and confirm to create a real ticket that goes through the same
+            lifecycle, SLA timer, and audit trail as one created from the New Ticket form.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-4 justify-center mb-10 text-sm">
+          <div className="px-4 py-1 bg-success-soft text-success rounded-full">✓ Speech recognition runs in your browser</div>
+          <div className="px-4 py-1 bg-success-soft text-success rounded-full">✓ No audio uploaded anywhere</div>
+          <div className="px-4 py-1 bg-warning-soft text-warning rounded-full">Draft extraction is keyword matching, not AI — always review before confirming</div>
+        </div>
+
+        <div className="rounded-3xl border border-line bg-surface p-8 shadow-xl">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-2xl font-semibold">Try it</h3>
+              <p className="text-sm text-ink-muted">Requires microphone access and a Chromium-based browser.</p>
+            </div>
+            <a href="#voice-demo" className="text-accent hover:underline text-sm">Back to top ↑</a>
+          </div>
+
+          <VoiceTicketDemo />
+        </div>
+
+        <div className="text-center mt-12">
+          <Link to="/register" className="btn-primary text-lg px-10 py-4">Create a free account</Link>
+          <p className="mt-3 text-xs text-ink-muted">The demo above works without an account; confirming a ticket requires signing in.</p>
+        </div>
+      </section>
+
       {/* Security trust note */}
+
       <section className="border-t border-line bg-surface">
         <div className="mx-auto max-w-6xl px-4 py-12">
           <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">

@@ -5,18 +5,19 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTicket } from "../hooks/useTicket";
 import { useEmployees } from "../hooks/useEmployees";
 import { useVendors } from "../hooks/useVendors";
+import { useTeams } from "../hooks/useTeams";
+import { usePriorityLabel, useStatusLabel } from "../hooks/useLabels";
 import { ticketService } from "../services/ticket.service";
 import { StatusBadge } from "../components/StatusBadge";
 import { PriorityBadge } from "../components/PriorityBadge";
 import { Loader } from "../components/Loader";
 import { useToast } from "../components/Toast";
 import { TicketTimeline } from "../components/TicketTimeline";
+import { AttachmentPanel } from "../components/AttachmentPanel";
 import { formatDate, formatRelativeDue } from "../utils/date";
 import {
   BLOCKED_STATUSES,
   PRIORITIES,
-  STATUS_LABELS,
-  TEAMS,
   TERMINAL_STATUSES,
   TICKET_STATUSES,
 } from "../types/ticket";
@@ -27,6 +28,9 @@ export const TicketDetails = () => {
   const { data: ticket, isLoading, isError } = useTicket(ticketId);
   const { data: employees } = useEmployees();
   const { data: vendors } = useVendors();
+  const { data: teams = [] } = useTeams();
+  const statusLabel = useStatusLabel();
+  const priorityLabel = usePriorityLabel();
   const [note, setNote] = useState("");
   const [reopenReason, setReopenReason] = useState("");
   const [nextAction, setNextAction] = useState("");
@@ -191,7 +195,18 @@ export const TicketDetails = () => {
             <dl className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <dt className="text-ink-secondary">Customer</dt>
-                <dd className="text-ink">{ticket.customer_name}</dd>
+                <dd className="text-ink">
+                  {ticket.contact_id ? (
+                    <Link
+                      to={`/contacts/${ticket.contact_id}`}
+                      className="text-accent hover:underline"
+                    >
+                      {ticket.customer_name}
+                    </Link>
+                  ) : (
+                    ticket.customer_name
+                  )}
+                </dd>
               </div>
               <div>
                 <dt className="text-ink-secondary">Email</dt>
@@ -205,6 +220,8 @@ export const TicketDetails = () => {
               </dd>
             </div>
           </div>
+
+          <AttachmentPanel ticketId={ticket.ticket_id} />
 
           <div className="card p-6">
             <h2 className="text-lg font-semibold text-ink">Activity</h2>
@@ -241,7 +258,7 @@ export const TicketDetails = () => {
               >
                 {TICKET_STATUSES.map((status) => (
                   <option key={status} value={status}>
-                    {STATUS_LABELS[status]}
+                    {statusLabel(status)}
                   </option>
                 ))}
               </select>
@@ -256,7 +273,7 @@ export const TicketDetails = () => {
               >
                 {PRIORITIES.map((p) => (
                   <option key={p} value={p}>
-                    {p}
+                    {priorityLabel(p)}
                   </option>
                 ))}
               </select>
@@ -335,7 +352,7 @@ export const TicketDetails = () => {
                 className="field mt-1"
               >
                 <option value="">Unassigned</option>
-                {TEAMS.map((t) => (
+                {teams.map((t) => (
                   <option key={t} value={t}>
                     {t}
                   </option>

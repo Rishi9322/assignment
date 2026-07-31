@@ -9,6 +9,7 @@ export interface AdminUser {
   team: Team | null;
   active: boolean;
   createdAt: string;
+  lockedUntil: string | null;
 }
 
 export interface UpdateUserPayload {
@@ -28,6 +29,22 @@ export interface TeamWorkload {
   resolved: number;
   reopen_rate: number | null;
   pressure_score: number;
+}
+
+export interface TeamDirectoryEntry {
+  id: number;
+  name: string;
+  archived: boolean;
+  created_at: string;
+}
+
+export interface CreateTeamPayload {
+  name: string;
+}
+
+export interface UpdateTeamPayload {
+  name?: string;
+  archived?: boolean;
 }
 
 export interface AuditLogEntry {

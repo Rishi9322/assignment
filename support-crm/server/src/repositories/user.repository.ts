@@ -26,10 +26,20 @@ export const userRepository = {
         team: true,
         active: true,
         createdAt: true,
+        lockedUntil: true,
       },
       orderBy: { name: "asc" },
     }),
 
   update: (id: number, data: { role?: string; active?: boolean; team?: string | null }) =>
     prisma.user.update({ where: { id }, data }),
+
+  recordFailedLogin: (id: number, attempts: number, lockedUntil: Date | null) =>
+    prisma.user.update({
+      where: { id },
+      data: { failedLoginAttempts: attempts, lockedUntil },
+    }),
+
+  clearLockout: (id: number) =>
+    prisma.user.update({ where: { id }, data: { failedLoginAttempts: 0, lockedUntil: null } }),
 };

@@ -12,6 +12,8 @@ import {
   UpdateTicketInput,
 } from "../types/ticket";
 import { computeDueAt } from "../utils/sla";
+import { dispatchWebhookEvent } from "../utils/webhookDispatcher";
+import { notify } from "../utils/notify";
 
 interface QueuedEvent {
   type: TicketEventType;
@@ -22,11 +24,19 @@ interface QueuedEvent {
 
 export const ticketService = {
   async createTicket(input: CreateTicketInput, createdByUserId: number) {
-    return ticketRepository.create({ ...input, createdByUserId });
+    const ticket = await ticketRepository.create({ ...input, createdByUserId });
+    dispatchWebhookEvent("ticket.created", {
+      ticket_id: ticket.ticketId,
+      subject: ticket.subject,
+      customer_email: ticket.customerEmail,
+      priority: ticket.priority,
+      status: ticket.status,
+    });
+    return ticket;
   },
 
-  listTickets(query: TicketListQuery) {
-    return ticketRepository.findMany(query);
+  listTickets(query: TicketListQuery, viewerId: number) {
+    return ticketRepository.findMany(query, viewerId);
   },
 
   async getTicket(ticketId: string) {
@@ -67,6 +77,13 @@ export const ticketService = {
     if (input.status !== undefined && input.status !== existing.status) {
       update.status = input.status;
       events.push({ type: "status_changed", fromValue: existing.status, toValue: input.status });
+      notify(
+        existing.assignedToUserId,
+        actorUserId,
+        "status_changed",
+        `${existing.ticketId} status changed to ${input.status}`,
+        existing.id
+      );
 
       const wasTerminal = TERMINAL_STATUSES.includes(existing.status as any);
       const isTerminal = TERMINAL_STATUSES.includes(input.status as any);
@@ -91,7 +108,7 @@ export const ticketService = {
       update.priority = input.priority;
       events.push({ type: "priority_changed", fromValue: existing.priority, toValue: input.priority });
       if (!existing.resolvedAt) {
-        update.dueAt = computeDueAt(input.priority);
+        update.dueAt = await computeDueAt(input.priority);
       }
     }
 
@@ -109,6 +126,13 @@ export const ticketService = {
         toValue: newUser ? newUser.name : null,
         message: "employee",
       });
+      notify(
+        nextAssignedTo,
+        actorUserId,
+        "assigned",
+        `You were assigned to ${existing.ticketId}: ${existing.subject}`,
+        existing.id
+      );
     }
 
     if (nextVendorId !== undefined && nextVendorId !== existing.vendorId) {
@@ -145,6 +169,12 @@ export const ticketService = {
 
     for (const event of events) {
       await ticketEventRepository.create({ ticketId: existing.id, actorUserId, ...event });
+      dispatchWebhookEvent(`ticket.${event.type}`, {
+        ticket_id: existing.ticketId,
+        from: event.fromValue ?? null,
+        to: event.toValue ?? null,
+        message: event.message ?? null,
+      });
     }
 
     return this.getTicket(ticketId);
@@ -164,6 +194,14 @@ export const ticketService = {
       type: "note",
       message,
     });
+    dispatchWebhookEvent("ticket.note", { ticket_id: existing.ticketId, message });
+    notify(
+      existing.assignedToUserId,
+      actorUserId,
+      "note",
+      `New note on ${existing.ticketId}: ${existing.subject}`,
+      existing.id
+    );
     return this.getTicket(ticketId);
   },
 };
